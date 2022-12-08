@@ -1,17 +1,32 @@
 import { differenceInSeconds } from 'date-fns'
-import { useState, useEffect } from 'react'
+import { useEffect, useContext } from 'react'
+import { CyclesContext } from '../..'
 import { CountdownContainer, Separator } from './styles'
 
-interface CountdownProps {
-  activeCycle: any
-  setCycles: any
-  activeCycleId: any
-}
-
-export function Countdown({ activeCycle, setCycles }: CountdownProps) {
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
+export function Countdown() {
+  const {
+    activeCycle,
+    activeCycleId,
+    markCurrentCycleAsFinished,
+    amountSecondsPassed,
+    setSecondsPassed,
+  } = useContext(CyclesContext)
 
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0
+
+  const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0
+
+  const minutesAmount = Math.floor(currentSeconds / 60)
+  const secondsAmount = currentSeconds % 60
+
+  const minutes = String(minutesAmount).padStart(2, '0')
+  const seconds = String(secondsAmount).padStart(2, '0')
+
+  useEffect(() => {
+    if (activeCycle) {
+      document.title = `${minutes}:${seconds}`
+    }
+  }, [minutes, seconds, activeCycle])
 
   useEffect(() => {
     let interval: number
@@ -24,20 +39,12 @@ export function Countdown({ activeCycle, setCycles }: CountdownProps) {
         )
 
         if (secondsDifference >= totalSeconds) {
-          setCycles((state) =>
-            state.map((cycle) => {
-              if (cycle.id === activeCycleId) {
-                return { ...cycle, finishedDate: new Date() }
-              } else {
-                return cycle
-              }
-            }),
-          )
+          markCurrentCycleAsFinished()
 
-          setAmountSecondsPassed(totalSeconds)
+          setSecondsPassed(totalSeconds)
           clearInterval(interval)
         } else {
-          setAmountSecondsPassed(secondsDifference)
+          setSecondsPassed(secondsDifference)
         }
       }, 1000)
     }
@@ -45,7 +52,7 @@ export function Countdown({ activeCycle, setCycles }: CountdownProps) {
     return () => {
       clearInterval(interval)
     }
-  }, [activeCycle, totalSeconds, activeCycleId])
+  }, [activeCycle, totalSeconds, activeCycleId, markCurrentCycleAsFinished])
 
   return (
     <CountdownContainer>
